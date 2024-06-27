@@ -1,10 +1,23 @@
 from flask import Flask, request, jsonify
 from flask_pymongo import PyMongo
 from bson.objectid import ObjectId
+from urllib.parse import quote_plus
 import config
 
+def encode_mongo_uri(uri):
+    if '://' in uri:
+        prefix, rest = uri.split('://', 1)
+        if '@' in rest:
+            userinfo, hostinfo = rest.split('@', 1)
+            user, passwd = userinfo.split(':', 1)
+            user = quote_plus(user)
+            passwd = quote_plus(passwd)
+            rest = f'{user}:{passwd}@{hostinfo}'
+            return f'{prefix}://{rest}'
+    return uri
+
 app = Flask(__name__)
-app.config.from_object(config.Config)
+app.config["MONGO_URI"] = encode_mongo_uri(config.Config.MONGO_URI)
 mongo = PyMongo(app)
 
 @app.route('/products', methods=['GET'])
